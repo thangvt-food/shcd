@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71</title>
-  <meta name="description" content="Tra cứu đáp án 128 câu hỏi ôn tập Quy chế đào tạo theo tín chỉ và Nghị quyết 71-NQ/TW. Tìm theo câu hỏi, đáp án hoặc từ khóa.">
+  <title>SHCD · Ôn tập &amp; kiểm tra K22–K25</title>
+  <meta name="description" content="Tra cứu đáp án 213 câu hỏi ôn tập và kiểm tra SHCD: Quy chế đào tạo, Nghị quyết 71, Tư tưởng Hồ Chí Minh, đề K22–K24 và K25.">
   <meta name="theme-color" content="#1f4a38">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://shcd.yangio.id.vn/">
-  <meta property="og:title" content="SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71">
-  <meta property="og:description" content="Tra cứu đáp án 128 câu hỏi ôn tập Quy chế đào tạo theo tín chỉ và Nghị quyết 71-NQ/TW.">
+  <meta property="og:title" content="SHCD · Ôn tập &amp; kiểm tra K22–K25">
+  <meta property="og:description" content="Tra cứu đáp án 213 câu hỏi ôn tập và kiểm tra SHCD: Quy chế, Nghị quyết, Tư tưởng Hồ Chí Minh, K22–K24 và K25.">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261018b">
+  <link rel="stylesheet" href="styles.css?v=20261018f">
 </head>
 <body>
   <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
@@ -29,11 +29,10 @@
         </span>
       </a>
 
-      <p class="nav-label">Bộ đề</p>
       <nav class="subject-nav" id="subject-nav" aria-label="Chọn bộ đề"></nav>
 
       <div class="sidebar-meta">
-        <p><span id="total-count">128</span> câu hỏi · 3 bộ đề</p>
+        <p><span id="total-count">173</span> câu hỏi · <span id="subject-count">4</span> bộ đề</p>
         <a href="#/tai-lieu">Tài liệu gốc</a>
       </div>
     </aside>
@@ -55,6 +54,11 @@
               </svg>
             </button>
           </div>
+          <button class="cohort-button" id="cohort-switch" type="button" aria-haspopup="dialog" aria-controls="cohort-modal" title="Đổi khoá">
+            <span class="cohort-button-label">Khoá</span>
+            <strong id="cohort-current">K25</strong>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+          </button>
         </div>
       </header>
 
@@ -63,14 +67,69 @@
         <p id="search-status" class="sr-only" aria-live="polite"></p>
 
         <footer class="footer">
-          <p>SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71-NQ/TW</p>
+          <p>SHCD · Ôn tập &amp; kiểm tra K22–K25</p>
           <p>Cập nhật 18.10.2026 · <a href="#/tai-lieu">Tài liệu gốc</a></p>
         </footer>
       </main>
     </div>
   </div>
 
-  <script src="data.js?v=20261018b"></script>
-  <script src="app.js?v=20261018b"></script>
+  <div class="cohort-modal" id="cohort-modal" hidden>
+    <div class="cohort-backdrop" id="cohort-backdrop"></div>
+    <div class="cohort-dialog" role="dialog" aria-modal="true" aria-labelledby="cohort-title" aria-describedby="cohort-lede">
+      <button class="cohort-close" id="cohort-close" type="button" aria-label="Đóng">×</button>
+      <p class="eyebrow">Bắt đầu</p>
+      <h2 class="cohort-title" id="cohort-title">Bạn đang học khoá nào?</h2>
+      <p class="cohort-lede" id="cohort-lede">Chọn khoá để chỉ hiển thị những bộ đề phù hợp.</p>
+      <div class="cohort-options">
+        <button class="cohort-option" type="button" data-cohort="K25" aria-pressed="false">
+          <span class="cohort-option-title">Khoá 2025 <span class="cohort-option-tag">K25</span></span>
+          <span class="cohort-option-subjects"></span>
+          <span class="cohort-option-meta"></span>
+        </button>
+        <button class="cohort-option" type="button" data-cohort="K22–K24" aria-pressed="false">
+          <span class="cohort-option-title">Khoá 2022–2024 <span class="cohort-option-tag">K22–K24</span></span>
+          <span class="cohort-option-subjects"></span>
+          <span class="cohort-option-meta"></span>
+        </button>
+      </div>
+      <p class="cohort-note">Có thể đổi khoá bất cứ lúc nào ở nút khoá trên thanh tìm kiếm.</p>
+    </div>
+  </div>
+
+  <div class="feedback-modal" id="feedback-modal" hidden>
+    <div class="feedback-backdrop" id="feedback-backdrop"></div>
+    <div class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title" aria-describedby="feedback-lede">
+      <button class="feedback-close" id="feedback-close" type="button" aria-label="Đóng">×</button>
+      <div class="feedback-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+        </svg>
+      </div>
+      <p class="eyebrow">Góc nhỏ từ Dev</p>
+      <h2 class="feedback-title" id="feedback-title">Bạn làm đúng được bao nhiêu câu rồi?</h2>
+      <p class="feedback-lede" id="feedback-lede">
+        Nếu website giúp bạn ôn thi nhanh và hiệu quả hơn, hãy dành 1 phút ghé qua bài viết để lại số câu đúng và cảm nhận nhé. <strong>Một vài chia sẻ từ các bạn sẽ là động lực rất lớn cho dev!</strong>
+      </p>
+      <div class="feedback-actions">
+        <a class="button feedback-btn" href="https://www.facebook.com/share/p/1PjqkLMvoe/" target="_blank" rel="noopener noreferrer" id="feedback-link">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+          </svg>
+          Ghé chia sẻ ngay
+        </a>
+        <button class="button ghost" type="button" id="feedback-later">Để sau nhé</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="back-to-top" id="back-to-top" type="button" aria-label="Lên đầu trang" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <path d="m18 15-6-6-6 6"></path>
+    </svg>
+  </button>
+
+  <script src="data.js?v=20261018f"></script>
+  <script src="app.js?v=20261018f"></script>
 </body>
 </html>

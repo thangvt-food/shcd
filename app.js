@@ -13,6 +13,16 @@
   const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
   const subjectOrder = new Map(subjects.map((subject, index) => [subject.id, index]));
   const fallbackSubject = subjects[0];
+  const COHORT_KEY = "shcd_cohort";
+  const COHORTS = ["K25", "K22–K24"];
+  const ASSET_VERSION = "20261018f";
+  let storedCohort = null;
+  try {
+    storedCohort = window.localStorage.getItem(COHORT_KEY);
+  } catch (error) {
+    storedCohort = null;
+  }
+  const firstRun = !COHORTS.includes(storedCohort);
 
   const els = {
     view,
@@ -22,10 +32,24 @@
     clear: document.getElementById("search-clear"),
     topbarTitle: document.getElementById("topbar-title"),
     total: document.getElementById("total-count"),
+    subjectCount: document.getElementById("subject-count"),
+    cohortSwitch: document.getElementById("cohort-switch"),
+    cohortCurrent: document.getElementById("cohort-current"),
+    cohortModal: document.getElementById("cohort-modal"),
+    cohortBackdrop: document.getElementById("cohort-backdrop"),
+    cohortClose: document.getElementById("cohort-close"),
+    cohortOptions: document.querySelectorAll(".cohort-option"),
     status: document.getElementById("search-status"),
+    backToTop: document.getElementById("back-to-top"),
+    feedbackModal: document.getElementById("feedback-modal"),
+    feedbackBackdrop: document.getElementById("feedback-backdrop"),
+    feedbackClose: document.getElementById("feedback-close"),
+    feedbackLater: document.getElementById("feedback-later"),
+    feedbackLink: document.getElementById("feedback-link"),
   };
 
   const state = {
+    cohort: COHORTS.includes(storedCohort) ? storedCohort : "K25",
     filter: "all",
     lastSubject: fallbackSubject.id,
     query: "",
@@ -73,17 +97,27 @@
     return fold(text).replace(/\s+/g, " ").trim();
   }
 
+  const ALIASES = {
+    quyche: "qc quy che dao tao tin chi",
+    nghiquyet: "nq nq71 nq 71 nghi quyet 71",
+    tthcm: "tthcm hcm tu tuong ho chi minh",
+    kiemtra: "kt de kiem tra k22 k24",
+    exam25: "kt test k25 de test k25 de kiem tra k25",
+  };
+
   const entries = [];
   for (const subject of subjects) {
+    const subjectAlias = ALIASES[subject.id] || "";
     for (const question of subject.questions) {
       const optionText = question.options.map((option) => option.text).join(" ");
+      const questionAliases = `c${question.id} q${question.id} cau${question.id}`;
       const fields = {
         question: fold(question.question),
         answer: fold(question.answerText),
         options: fold(optionText),
         explanation: fold(question.explanation),
         meta: fold(
-          `${subject.name} ${subject.title} câu ${question.id} đáp án ${question.answerLabel}`
+          `${subject.name} ${subject.title} ${subjectAlias} ${questionAliases} câu ${question.id} đáp án ${question.answerLabel}`
         ),
       };
       entries.push({
@@ -169,11 +203,12 @@
       return { query, tokens: [], results: [], mode: null };
     }
     const tokens = query.split(" ").filter(Boolean);
+    const pool = entries.filter((entry) => cohortMatches(entry.subject));
 
-    const numberMatch = query.match(/^(?:cau\s*)?(\d{1,3})$/);
+    const numberMatch = query.match(/^(?:cau\s*|c\s*|q\s*)?(\d{1,3})$/);
     if (numberMatch) {
       const number = Number(numberMatch[1]);
-      const exact = entries.filter((entry) => entry.question.id === number);
+      const exact = pool.filter((entry) => entry.question.id === number);
       if (exact.length) {
         return {
           query,
@@ -184,17 +219,21 @@
       }
     }
 
-    const answerMatch = query.match(/^dap an\s+(.+)$/);
+    const answerMatch = query.match(/^(?:dap\s*an|da)\s*[:=]?\s*(.+)$/);
     if (answerMatch) {
       const target = answerMatch[1].trim();
       const answerKey =
-        target === "dung" ? "true" : target === "sai" ? "false" : target;
+        target === "dung" || target === "d"
+          ? "true"
+          : target === "sai" || target === "s"
+          ? "false"
+          : target;
       if (
         /^[a-d]$/.test(answerKey) ||
         answerKey === "true" ||
         answerKey === "false"
       ) {
-        const matches = entries.filter(
+        const matches = pool.filter(
           (entry) => entry.question.answerKey === answerKey
         );
         if (matches.length) {
@@ -209,7 +248,7 @@
     }
 
     const results = [];
-    for (const entry of entries) {
+    for (const entry of pool) {
       let score = 0;
       let matchesAll = true;
       for (const token of tokens) {
@@ -260,20 +299,77 @@
     els.clear.hidden = !hasValue;
   }
 
+  function cohortMatches(subject, cohort = state.cohort) {
+    return subject.cohort === "Tất cả" || subject.cohort === cohort;
+  }
+
+  function visibleSubjects(cohort = state.cohort) {
+    return subjects.filter((subject) => cohortMatches(subject, cohort));
+  }
+
+  function displayCohort(cohort = state.cohort) {
+    return cohort === "K22–K24" ? "K22–24" : cohort;
+  }
+
+  function pdfUrl(subject) {
+    return `${subject.pdf}?v=${ASSET_VERSION}`;
+  }
+
+  function returnSubject() {
+    const visible = visibleSubjects();
+    return (
+      visible.find((subject) => subject.id === state.lastSubject) ||
+      visible[0] ||
+      fallbackSubject
+    );
+  }
+
+  function cohortLabel(subject, short = false) {
+    if (subject.cohort === "Tất cả") {
+      return short ? "Tất cả" : "Tất cả các khóa";
+    }
+    return subject.cohort;
+  }
+
   function renderNav() {
-    els.nav.innerHTML = subjects
+    const visible = visibleSubjects();
+    const groups = [];
+    for (const subject of visible) {
+      let group = groups.find((item) => item.name === subject.group);
+      if (!group) {
+        group = { name: subject.group, subjects: [] };
+        groups.push(group);
+      }
+      group.subjects.push(subject);
+    }
+    els.nav.innerHTML = groups
       .map(
-        (subject) =>
-          `<a class="nav-link" data-subject="${escapeHtml(
-            subject.id
-          )}" href="#/${escapeHtml(subject.id)}" title="${escapeHtml(
-            subject.title
-          )}"><span>${escapeHtml(subject.name)}</span><span class="nav-count">${
-            subject.count
-          }</span></a>`
+        (group) => `<div class="nav-group">
+          <p class="nav-label">${escapeHtml(group.name)}</p>
+          ${group.subjects
+            .map(
+              (subject) =>
+                `<a class="nav-link" data-subject="${escapeHtml(
+                  subject.id
+                )}" href="#/${escapeHtml(subject.id)}" title="${escapeHtml(
+                  subject.title
+                )}"><span class="nav-name">${escapeHtml(
+                  subject.name
+                )}</span><span class="nav-meta"><span class="nav-tag">${escapeHtml(
+                  cohortLabel(subject, true)
+                )}</span><span class="nav-count">${
+                  subject.count
+                }</span></span></a>`
+            )
+            .join("")}
+        </div>`
       )
       .join("");
-    els.total.textContent = DATA.total;
+    els.total.textContent = visible.reduce(
+      (sum, subject) => sum + subject.count,
+      0
+    );
+    els.subjectCount.textContent = visible.length;
   }
 
   function renderQuestion(question) {
@@ -301,7 +397,16 @@
         <svg class="q-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
       </summary>
       <div class="question-body">
-        <p class="question-kind">${typeLabel}</p>
+        <div class="question-body-top">
+          <p class="question-kind">${typeLabel}</p>
+          <button class="q-copy-btn" type="button" data-copy-id="${question.id}" aria-label="Sao chép câu hỏi và đáp án">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Sao chép</span>
+          </button>
+        </div>
         <ul class="options">${options}</ul>
         ${
           question.explanation
@@ -318,6 +423,16 @@
     const details = document.getElementById(`q-${questionId}`);
     if (!details) return;
     details.open = true;
+
+    // Highlight active key item
+    document.querySelectorAll(".key-item").forEach((item) => {
+      item.classList.remove("is-current");
+    });
+    const keyItem = document.querySelector(`.key-item[href*="/${questionId}"]`);
+    if (keyItem) {
+      keyItem.classList.add("is-current");
+    }
+
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
@@ -364,11 +479,14 @@
         <p class="hero-lede">${escapeHtml(subject.description)}</p>
         <div class="hero-meta">
           <span>${subject.count} câu hỏi</span>
+          <span class="cohort-tag">${escapeHtml(cohortLabel(subject))}</span>
           <span>Cập nhật 18.10.2026</span>
-          <span>Đáp án và giải thích</span>
+          <span>${
+            subject.hasExplanations ? "Đáp án và giải thích" : "Đáp án"
+          }</span>
         </div>
         <div class="hero-actions">
-          <a class="button" href="${escapeHtml(subject.pdf)}" download>
+          <a class="button" href="${escapeHtml(pdfUrl(subject))}" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
             Tải PDF · ${escapeHtml(subject.pdfSize)}
           </a>
@@ -425,6 +543,7 @@
     }">
       <div class="result-meta">
         <span class="subject">${escapeHtml(subject.name)}</span>
+        <span class="cohort">${escapeHtml(cohortLabel(subject))}</span>
         <span>Câu ${question.id}</span>
         <span>${
           question.type === "true_false" ? "Đúng / Sai" : "Trắc nghiệm"
@@ -444,7 +563,7 @@
   function renderSearch(rawQuery, keepFocus = false) {
     const query = rawQuery.trim();
     if (!query) {
-      const subject = subjectById.get(state.lastSubject) || fallbackSubject;
+      const subject = returnSubject();
       window.location.hash = `#/${subject.id}`;
       return;
     }
@@ -458,9 +577,13 @@
     document.title = `Tìm “${query}” · SHCD`;
 
     const result = search(query);
-    const counts = new Map(subjects.map((subject) => [subject.id, 0]));
+    const visible = visibleSubjects();
+    const counts = new Map(visible.map((subject) => [subject.id, 0]));
     for (const item of result.results) {
-      counts.set(item.entry.subject.id, counts.get(item.entry.subject.id) + 1);
+      const id = item.entry.subject.id;
+      if (counts.has(id)) {
+        counts.set(id, counts.get(id) + 1);
+      }
     }
     const filtered =
       state.filter === "all"
@@ -471,7 +594,7 @@
 
     const filters = [
       { id: "all", label: "Tất cả", count: result.results.length },
-      ...subjects.map((subject) => ({
+      ...visible.map((subject) => ({
         id: subject.id,
         label: subject.name,
         count: counts.get(subject.id),
@@ -504,7 +627,7 @@
               ? "<span>Tìm theo số câu</span>"
               : result.mode === "answer"
               ? "<span>Lọc theo đáp án</span>"
-              : "<span>Trong toàn bộ 3 bộ đề</span>"
+              : `<span>Trong toàn bộ ${visible.length} bộ đề</span>`
           }
         </div>
         <div class="filter-row" role="group" aria-label="Lọc theo bộ đề">${filters}</div>
@@ -532,16 +655,19 @@
     setActiveNav(null);
     setTopbar("Tài liệu");
     document.title = "Tài liệu gốc · SHCD";
-    const cards = subjects
+    const visible = visibleSubjects();
+    const cards = visible
       .map(
         (subject) => `<article class="doc-card">
-          <p class="eyebrow">${escapeHtml(subject.eyebrow)}</p>
+          <p class="eyebrow">${escapeHtml(subject.eyebrow)} · ${escapeHtml(
+          cohortLabel(subject)
+        )}</p>
           <h2>${escapeHtml(subject.title)}</h2>
           <p>${escapeHtml(subject.description)}</p>
           <div class="doc-meta"><span>${subject.count} câu</span><span>PDF</span><span>${escapeHtml(
           subject.pdfSize
         )}</span></div>
-          <a class="button" href="${escapeHtml(subject.pdf)}" download>
+          <a class="button" href="${escapeHtml(pdfUrl(subject))}" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
             Tải PDF
           </a>
@@ -552,10 +678,10 @@
       <section class="subject-hero">
         <p class="eyebrow">Tài liệu</p>
         <h1 class="hero-title">Bản PDF gốc</h1>
-        <p class="hero-lede">Ba bản đáp án được đồng bộ từ cùng một ngân hàng câu hỏi. Tải về để ôn offline hoặc in ra.</p>
+        <p class="hero-lede">${visible.length} bản đáp án được đồng bộ từ cùng một ngân hàng câu hỏi. Tải về để ôn offline hoặc in ra.</p>
       </section>
       <div class="doc-grid">${cards}</div>
-      <div class="doc-note"><strong>Cập nhật 18.10.2026.</strong> Bản PDF Quy chế đào tạo đã được điều chỉnh đáp án Câu 27.</div>`;
+      <div class="doc-note"><strong>Cập nhật 18.10.2026.</strong> Đã điều chỉnh đáp án Câu 27 (Quy chế đào tạo), bổ sung Tư tưởng Hồ Chí Minh và đề kiểm tra K22–K24 / K25.</div>`;
     els.status.textContent = "Tài liệu PDF";
     window.scrollTo({ top: 0, behavior: "auto" });
   }
@@ -573,8 +699,14 @@
       return { view: "docs" };
     }
     const subject = subjectById.get(parts[0]);
-    if (!subject) {
-      return { view: "subject", subject: fallbackSubject, questionId: null };
+    const firstVisible = visibleSubjects()[0] || fallbackSubject;
+    if (!subject || !cohortMatches(subject)) {
+      return {
+        view: "subject",
+        subject: firstVisible,
+        questionId: null,
+        redirect: true,
+      };
     }
     return {
       view: "subject",
@@ -585,9 +717,12 @@
 
   function handleRoute() {
     const route = parseRoute();
+    if (route.redirect) {
+      window.history.replaceState(null, "", `#/${route.subject.id}`);
+    }
     if (route.view === "search") {
       els.search.value = route.query;
-      renderSearch(route.query, true);
+      renderSearch(route.query, false);
       return;
     }
     els.search.value = "";
@@ -595,8 +730,92 @@
     if (route.view === "docs") {
       renderDocs();
     } else {
-      renderSubject(route.subject, route.questionId);
+      if (
+        state.currentView === "subject" &&
+        state.lastSubject === route.subject.id
+      ) {
+        if (route.questionId) {
+          openQuestion(route.questionId);
+        }
+      } else {
+        renderSubject(route.subject, route.questionId);
+      }
     }
+  }
+
+  function updateCohortButton() {
+    els.cohortCurrent.textContent = displayCohort();
+    els.cohortSwitch.setAttribute(
+      "aria-label",
+      `Đổi khoá, hiện tại ${state.cohort}`
+    );
+    els.cohortSwitch.title = `Đổi khoá (${state.cohort})`;
+  }
+
+  function openCohortModal() {
+    els.cohortOptions.forEach((option) => {
+      const cohort = option.dataset.cohort;
+      const list = visibleSubjects(cohort);
+      const total = list.reduce((sum, subject) => sum + subject.count, 0);
+      const subjectsLine = option.querySelector(".cohort-option-subjects");
+      const meta = option.querySelector(".cohort-option-meta");
+      if (subjectsLine) {
+        subjectsLine.textContent = list
+          .map((subject) => subject.name)
+          .join(" · ");
+      }
+      if (meta) {
+        meta.textContent = `${list.length} bộ đề · ${total} câu`;
+      }
+      const isCurrent = cohort === state.cohort;
+      option.classList.toggle("is-current", isCurrent);
+      option.setAttribute("aria-pressed", isCurrent ? "true" : "false");
+    });
+    els.cohortModal.hidden = false;
+    document.body.classList.add("modal-open");
+    const currentOption =
+      els.cohortModal.querySelector(".cohort-option.is-current") ||
+      els.cohortModal.querySelector(".cohort-option");
+    if (currentOption) {
+      currentOption.focus();
+    }
+  }
+
+  function closeCohortModal() {
+    if (els.cohortModal.hidden) return;
+    els.cohortModal.hidden = true;
+    document.body.classList.remove("modal-open");
+    try {
+      if (!window.localStorage.getItem(COHORT_KEY)) {
+        window.localStorage.setItem(COHORT_KEY, state.cohort);
+      }
+    } catch (error) {
+      /* ignore */
+    }
+    els.cohortSwitch.focus();
+  }
+
+  function selectCohort(cohort) {
+    if (!COHORTS.includes(cohort)) return;
+    state.cohort = cohort;
+    state.filter = "all";
+    try {
+      window.localStorage.setItem(COHORT_KEY, cohort);
+    } catch (error) {
+      /* ignore */
+    }
+    const visible = visibleSubjects();
+    if (!visible.some((subject) => subject.id === state.lastSubject)) {
+      state.lastSubject = visible[0] ? visible[0].id : fallbackSubject.id;
+    }
+    updateCohortButton();
+    closeCohortModal();
+    renderNav();
+    const route = parseRoute();
+    if (route.redirect) {
+      window.history.replaceState(null, "", `#/${route.subject.id}`);
+    }
+    handleRoute();
   }
 
   let inputTimer;
@@ -608,7 +827,7 @@
     inputTimer = window.setTimeout(() => {
       const query = els.search.value.trim();
       if (!query) {
-        const subject = subjectById.get(state.lastSubject) || fallbackSubject;
+        const subject = returnSubject();
         window.history.replaceState(null, "", `#/${subject.id}`);
         renderSubject(subject);
         return;
@@ -626,7 +845,7 @@
   els.clear.addEventListener("click", () => {
     els.search.value = "";
     setSearchChrome(false);
-    const subject = subjectById.get(state.lastSubject) || fallbackSubject;
+    const subject = returnSubject();
     window.history.replaceState(null, "", `#/${subject.id}`);
     renderSubject(subject);
     els.search.focus();
@@ -643,6 +862,19 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      if (els.feedbackModal && !els.feedbackModal.hidden) {
+        event.preventDefault();
+        closeFeedbackModal(false);
+        return;
+      }
+      if (!els.cohortModal.hidden) {
+        event.preventDefault();
+        closeCohortModal();
+        return;
+      }
+    }
+    if (!els.cohortModal.hidden || (els.feedbackModal && !els.feedbackModal.hidden)) return;
     const target = event.target;
     const editable =
       target instanceof HTMLElement &&
@@ -671,18 +903,165 @@
         : "Mở tất cả đáp án";
       return;
     }
+
+    const copyBtn = event.target.closest("[data-copy-id]");
+    if (copyBtn) {
+      const qId = Number(copyBtn.dataset.copyId);
+      const subject = subjectById.get(state.lastSubject);
+      const question = subject ? subject.questions.find((q) => q.id === qId) : null;
+      if (question) {
+        const typeStr = question.type === "true_false" ? "Đúng / Sai" : "Trắc nghiệm";
+        const opts = question.options.map((o) => `${o.label}. ${o.text}`).join("\n");
+        let textToCopy = `[SHCD - ${subject.name}] Câu ${question.id} (${typeStr}):\n${question.question}\n\n${opts}\n\n→ Đáp án đúng: ${question.answerLabel}. ${question.answerText}`;
+        if (question.explanation) {
+          textToCopy += `\n* Giải thích: ${question.explanation}`;
+        }
+        const span = copyBtn.querySelector("span");
+        const origText = span ? span.textContent : "Sao chép";
+        const doSuccess = () => {
+          copyBtn.classList.add("is-copied");
+          if (span) span.textContent = "Đã chép ✓";
+          setTimeout(() => {
+            copyBtn.classList.remove("is-copied");
+            if (span) span.textContent = origText;
+          }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textToCopy).then(doSuccess).catch(() => {});
+        } else {
+          const ta = document.createElement("textarea");
+          ta.value = textToCopy;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand("copy");
+            doSuccess();
+          } catch (e) {}
+          document.body.removeChild(ta);
+        }
+      }
+      return;
+    }
+
     const filter = event.target.closest("[data-filter]");
     if (filter) {
       state.filter = filter.dataset.filter;
-      renderSearch(state.query, true);
+      renderSearch(state.query, false);
+      return;
     }
   });
+
+  if (els.backToTop) {
+    window.addEventListener(
+      "scroll",
+      () => {
+        const show = window.scrollY > 300;
+        els.backToTop.hidden = !show;
+      },
+      { passive: true }
+    );
+    els.backToTop.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  els.cohortSwitch.addEventListener("click", openCohortModal);
+  els.cohortBackdrop.addEventListener("click", closeCohortModal);
+  els.cohortClose.addEventListener("click", closeCohortModal);
+  els.cohortOptions.forEach((option) => {
+    option.addEventListener("click", () => selectCohort(option.dataset.cohort));
+  });
+  els.cohortModal.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      els.cohortModal.querySelectorAll("button:not([disabled])")
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  const FEEDBACK_KEY = "shcd_fb_feedback_seen";
+  const FEEDBACK_MIN_MS = 5 * 60 * 1000; // 5 phút
+  const FEEDBACK_MAX_MS = 10 * 60 * 1000; // 10 phút
+
+  function openFeedbackModal() {
+    if (!els.feedbackModal) return;
+    if (!els.cohortModal.hidden) {
+      window.setTimeout(openFeedbackModal, 20000);
+      return;
+    }
+    els.feedbackModal.hidden = false;
+    document.body.classList.add("modal-open");
+    const link = els.feedbackLink;
+    if (link) {
+      link.focus();
+    }
+  }
+
+  function closeFeedbackModal(permanently = false) {
+    if (!els.feedbackModal || els.feedbackModal.hidden) return;
+    els.feedbackModal.hidden = true;
+    if (els.cohortModal.hidden) {
+      document.body.classList.remove("modal-open");
+    }
+    try {
+      window.localStorage.setItem(
+        FEEDBACK_KEY,
+        permanently ? "clicked" : Date.now().toString()
+      );
+    } catch (e) {}
+  }
+
+  function initFeedbackTimer() {
+    if (!els.feedbackModal) return;
+    try {
+      const status = window.localStorage.getItem(FEEDBACK_KEY);
+      if (status === "clicked") return;
+      if (status && !isNaN(Number(status))) {
+        const lastSeen = Number(status);
+        if (Date.now() - lastSeen < 24 * 60 * 60 * 1000) return;
+      }
+    } catch (e) {}
+
+    const delay = Math.floor(
+      FEEDBACK_MIN_MS + Math.random() * (FEEDBACK_MAX_MS - FEEDBACK_MIN_MS)
+    );
+    window.setTimeout(openFeedbackModal, delay);
+  }
+
+  if (els.feedbackClose) {
+    els.feedbackClose.addEventListener("click", () => closeFeedbackModal(false));
+  }
+  if (els.feedbackBackdrop) {
+    els.feedbackBackdrop.addEventListener("click", () => closeFeedbackModal(false));
+  }
+  if (els.feedbackLater) {
+    els.feedbackLater.addEventListener("click", () => closeFeedbackModal(false));
+  }
+  if (els.feedbackLink) {
+    els.feedbackLink.addEventListener("click", () => closeFeedbackModal(true));
+  }
 
   window.addEventListener("hashchange", handleRoute);
 
   renderNav();
   if (!window.location.hash) {
-    window.history.replaceState(null, "", `#/${fallbackSubject.id}`);
+    window.history.replaceState(null, "", `#/${returnSubject().id}`);
   }
   handleRoute();
+  updateCohortButton();
+  if (firstRun) {
+    openCohortModal();
+  }
+  initFeedbackTimer();
 })();
