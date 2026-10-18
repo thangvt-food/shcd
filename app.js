@@ -300,7 +300,9 @@
   }
 
   function cohortMatches(subject, cohort = state.cohort) {
-    return subject.cohort === "Tất cả" || subject.cohort === cohort;
+    if (!subject) return false;
+    const sc = subject.cohort || "Tất cả";
+    return sc === "Tất cả" || sc === cohort;
   }
 
   function visibleSubjects(cohort = state.cohort) {
@@ -325,19 +327,21 @@
   }
 
   function cohortLabel(subject, short = false) {
-    if (subject.cohort === "Tất cả") {
+    const sc = subject?.cohort || "Tất cả";
+    if (sc === "Tất cả") {
       return short ? "Tất cả" : "Tất cả các khóa";
     }
-    return subject.cohort;
+    return sc;
   }
 
   function renderNav() {
     const visible = visibleSubjects();
     const groups = [];
     for (const subject of visible) {
-      let group = groups.find((item) => item.name === subject.group);
+      const groupName = subject.group || "Ôn tập";
+      let group = groups.find((item) => item.name === groupName);
       if (!group) {
-        group = { name: subject.group, subjects: [] };
+        group = { name: groupName, subjects: [] };
         groups.push(group);
       }
       group.subjects.push(subject);
