@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71</title>
+  <meta name="description" content="Tra cứu đáp án 128 câu hỏi ôn tập Quy chế đào tạo theo tín chỉ và Nghị quyết 71-NQ/TW. Tìm theo câu hỏi, đáp án hoặc từ khóa.">
+  <meta name="theme-color" content="#1f4a38">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://shcd.yangio.id.vn/">
+  <meta property="og:title" content="SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71">
+  <meta property="og:description" content="Tra cứu đáp án 128 câu hỏi ôn tập Quy chế đào tạo theo tín chỉ và Nghị quyết 71-NQ/TW.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
+
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#/quyche" aria-label="SHCD — trang chủ">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span class="brand-copy">
+          <span class="brand-name">SHCD</span>
+          <span class="brand-note">Ôn tập</span>
+        </span>
+      </a>
+
+      <p class="nav-label">Bộ đề</p>
+      <nav class="subject-nav" id="subject-nav" aria-label="Chọn bộ đề"></nav>
+
+      <div class="sidebar-meta">
+        <p><span id="total-count">128</span> câu hỏi · 3 bộ đề</p>
+        <a href="#/tai-lieu">Tài liệu gốc</a>
+      </div>
+    </aside>
+
+    <div class="shell">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <p class="topbar-title" id="topbar-title">Ôn tập SHCD</p>
+          <div class="search" role="search">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5"></circle>
+              <path d="m16 16 4.5 4.5"></path>
+            </svg>
+            <input id="search-input" type="search" placeholder="Tìm câu hỏi, đáp án, từ khóa…" autocomplete="off" spellcheck="false" aria-label="Tìm kiếm câu hỏi và đáp án">
+            <kbd class="search-kbd" aria-hidden="true">/</kbd>
+            <button class="search-clear" id="search-clear" type="button" aria-label="Xóa tìm kiếm" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" class="main">
+        <div id="view" class="view"></div>
+        <p id="search-status" class="sr-only" aria-live="polite"></p>
+
+        <footer class="footer">
+          <p>SHCD · Ôn tập Quy chế đào tạo &amp; Nghị quyết 71-NQ/TW</p>
+          <p>Cập nhật 18.10.2026 · <a href="#/tai-lieu">Tài liệu gốc</a></p>
+        </footer>
+      </main>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
